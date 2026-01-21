@@ -11,7 +11,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-import torch
+
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -27,8 +27,6 @@ BATCH_SIZE = 8
 NUM_EPOCHS = 15
 LR = 1e-3
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Running on: {DEVICE}")
 
 
 def detect_grass_mask(img_bgr):
@@ -271,4 +269,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
