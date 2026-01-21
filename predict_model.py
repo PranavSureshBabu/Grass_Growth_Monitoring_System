@@ -88,9 +88,10 @@ def predict_from_image(image_bytes: bytes):
  
 
     return {
-        "label": label,
-        "prob_trimmed": float(probs[0]),
-        "prob_grown": float(probs[1])
+        "prediction": label,
+        "confidence_trimmed": float(probs[0]),
+        "confidence_grown": float(probs[1])
     }
+
 
 
