@@ -80,11 +80,17 @@ def predict_from_image(image_bytes: bytes):
         probs = torch.softmax(logits, dim=1)[0].cpu().numpy()
 
     pred = int(np.argmax(probs))
-    label = "grown" if pred == 1 else "trimmed"
+    label_map = {
+    0: "No Trimming Needed",
+    1: "Trimming Needed"
+    }
+    label = label_map[pred]
+ 
 
     return {
         "label": label,
         "prob_trimmed": float(probs[0]),
         "prob_grown": float(probs[1])
     }
+
 
