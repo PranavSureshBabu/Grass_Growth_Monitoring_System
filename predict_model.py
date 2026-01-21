@@ -6,7 +6,9 @@ import torch
 import torch.nn as nn
 from torchvision import models, transforms
 
-from train_model import detect_grass_mask, SAVE_PATH, DEVICE
+
+from config import DEVICE, SAVE_PATH
+from grass_utils import detect_grass_mask
 
 # ----------------------------
 # Preprocessing (same as training)
@@ -85,3 +87,4 @@ def predict_from_image(image_bytes: bytes):
         "prob_trimmed": float(probs[0]),
         "prob_grown": float(probs[1])
     }
+
