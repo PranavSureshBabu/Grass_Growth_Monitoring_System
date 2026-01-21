@@ -1,16 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from predict_model import predict_from_image
 
 app = FastAPI(title="Grass Growth Prediction API")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 
 @app.get("/")
 def health():
@@ -28,4 +19,5 @@ async def predict(file: UploadFile = File(...)):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
