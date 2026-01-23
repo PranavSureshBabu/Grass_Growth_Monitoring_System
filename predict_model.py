@@ -6,12 +6,11 @@ import torch
 import torch.nn as nn
 from torchvision import models, transforms
 
-
 from config import DEVICE, SAVE_PATH
 from grass_utils import detect_grass_mask
 
 # ----------------------------
-# Preprocessing (same as training)
+# Image preprocessing (same as training)
 # ----------------------------
 transform = transforms.Compose([
     transforms.Resize((256, 256)),
@@ -33,7 +32,7 @@ def create_model():
     return model
 
 # ----------------------------
-# Load model ONCE
+# Load model ONCE (important for Render)
 # ----------------------------
 model = create_model().to(DEVICE)
 state = torch.load(SAVE_PATH, map_location=DEVICE)
@@ -44,17 +43,22 @@ model.eval()
 # Prediction function
 # ----------------------------
 def predict_from_image(image_bytes: bytes):
-    # Decode image
+    # Decode image safely
     img_array = np.frombuffer(image_bytes, np.uint8)
     img_bgr = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
     if img_bgr is None:
-        raise ValueError("Invalid image")
+        raise ValueError("Invalid image format")
 
-    # Crop grass ROI
+    # Detect grass region (safe handling)
     mask = detect_grass_mask(img_bgr)
-    ys, xs = np.where(mask > 0)
 
+    if mask is not None and mask.shape[:2] == img_bgr.shape[:2]:
+        ys, xs = np.where(mask > 0)
+    else:
+        ys, xs = [], []
+
+    # Crop grass ROI if detected
     if len(xs) > 0 and len(ys) > 0:
         x0, x1 = xs.min(), xs.max()
         y0, y1 = ys.min(), ys.max()
@@ -65,13 +69,13 @@ def predict_from_image(image_bytes: bytes):
         y1 = min(y1 + pad, img_bgr.shape[0] - 1)
         x1 = min(x1 + pad, img_bgr.shape[1] - 1)
 
-        img_bgr = img_bgr[y0:y1+1, x0:x1+1]
+        img_bgr = img_bgr[y0:y1 + 1, x0:x1 + 1]
 
-    # Convert to PIL
+    # Convert to PIL for torchvision transforms
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     pil_img = Image.fromarray(img_rgb)
 
-    # Transform
+    # Apply transforms
     x = transform(pil_img).unsqueeze(0).to(DEVICE)
 
     # Predict
@@ -80,18 +84,16 @@ def predict_from_image(image_bytes: bytes):
         probs = torch.softmax(logits, dim=1)[0].cpu().numpy()
 
     pred = int(np.argmax(probs))
+
     label_map = {
-    0: "No Trimming Needed",
-    1: "Trimming Needed"
+        0: "No Trimming Needed",
+        1: "Trimming Needed"
     }
-    label = label_map[pred]
- 
 
+    # Return JSON-safe output
     return {
-        "prediction": label,
-        "confidence_trimmed": float(probs[0]),
-        "confidence_grown": float(probs[1])
+        "prediction": label_map[pred],
+        "confidence_no_trimming": float(probs[0]),
+        "confidence_trimming": float(probs[1])
     }
-
-
 
